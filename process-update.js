@@ -21,9 +21,16 @@ function upToDate(hash) {
 
 module.exports = function(hash, moduleMap, options) {
   var reload = options.reload;
-  if (!upToDate(hash) && module.hot.status() == "idle") {
-    if (options.log) console.log("[HMR] Checking for updates on the server...");
-    check();
+  if (!upToDate(hash)) {
+    if (module.hot.status() == "idle") {
+      if (options.log) console.log("[HMR] Checking for updates on the server...");
+      check();
+    } else if (module.hot.status() in failureStatuses) {
+      if (options.warn) {
+        console.warn("[HMR] Cannot check for update (Full reload needed)");
+      }
+      performReload();
+    }
   }
 
   function check() {
@@ -46,7 +53,7 @@ module.exports = function(hash, moduleMap, options) {
 
         logUpdates(updatedModules, renewedModules);
       });
-    });
+    }).catch(handleError);
   }
 
   function logUpdates(updatedModules, renewedModules) {
